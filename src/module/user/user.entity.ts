@@ -34,9 +34,6 @@ export class User {
     @Column()
     service: string;
 
-    @Column()
-    serviceOption: string;
-
     @Column({ nullable: true })
     agencyCode: string;
 

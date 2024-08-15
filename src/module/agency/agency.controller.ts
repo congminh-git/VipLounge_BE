@@ -24,29 +24,10 @@ export class AgencyController {
         }
     }
 
-    @Get('serviceOptions')
-    async getAgencyListServiceOptions(@Query('agency') agency) {
+    @Get(':agencyKey')
+    async getAgencyByKey(@Param('agencyKey') agencyKey: string) {
         try {
-            const result = await this.agencyService.getAgencyListServiceOptions(agency);
-            return { data: result, status: 200, message: 'Successfully retrieved list of agencys.' };
-        } catch (error) {
-            if (error instanceof HttpException) {
-                throw error;
-            } else {
-                console.log(error);
-                throw new HttpException(
-                    'Failed to retrieve list agency. Please try again later.',
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                );
-            }
-        }
-    }
-
-    @Get(':id')
-    async getAgencyById(@Param('id') id: string) {
-        const agencyId = parseInt(id, 10);
-        try {
-            const result = await this.agencyService.getAgencyById(agencyId);
+            const result = await this.agencyService.getAgencyByKey(agencyKey);
             return { data: result, status: 200, message: 'Successfully retrieved agency.' };
         } catch (error) {
             if (error instanceof HttpException) {
@@ -63,7 +44,12 @@ export class AgencyController {
     @Post()
     async addAgency(@Body() agencyData: Agency) {
         try {
-            const result = await this.agencyService.addAgency(agencyData.name, agencyData.code, agencyData.service);
+            const result = await this.agencyService.addAgency(
+                agencyData.name,
+                agencyData.code,
+                agencyData.service,
+                agencyData.airportCode,
+            );
             return { data: result, status: HttpStatus.CREATED, message: 'Agency added successfully.' };
         } catch (error) {
             if (error instanceof HttpException) {
@@ -74,11 +60,10 @@ export class AgencyController {
         }
     }
 
-    @Put('update/:id')
-    async updateAgency(@Body() agencyData: Agency, @Param('id') id: string) {
+    @Put('update/:agencyKey')
+    async updateAgency(@Body() agencyData: Agency, @Param('agencyKey') agencyKey: string) {
         try {
-            const agencyId = parseInt(id, 10);
-            const result = await this.agencyService.updateAgency(agencyData.name, agencyData.service, agencyId);
+            const result = await this.agencyService.updateAgency(agencyData.name, agencyData.service, agencyKey);
             return { data: result, status: HttpStatus.OK, message: 'Agency update successfully.' };
         } catch (error) {
             if (error instanceof HttpException) {
@@ -89,11 +74,10 @@ export class AgencyController {
         }
     }
 
-    @Put('active/:id')
-    async putActiveAgency(@Param('id') id: string) {
+    @Put('active/:agencyKey')
+    async putActiveAgency(@Param('agencyKey') agencyKey: string) {
         try {
-            const userId = parseInt(id, 10);
-            const result = await this.agencyService.putActiveAgency(userId);
+            const result = await this.agencyService.putActiveAgency(agencyKey);
             return { data: result, status: HttpStatus.OK, message: 'Successfully' };
         } catch (error) {
             if (error instanceof HttpException) {
@@ -104,11 +88,10 @@ export class AgencyController {
         }
     }
 
-    @Delete('/:id')
-    async deleteAgency(@Param('id') id: string) {
+    @Delete('/:agencyKey')
+    async deleteAgency(@Param('agencyKey') agencyKey: string) {
         try {
-            const agencyId = parseInt(id, 10);
-            const result = await this.agencyService.deleteAgency(agencyId);
+            const result = await this.agencyService.deleteAgency(agencyKey);
             return { data: result, status: HttpStatus.OK, message: 'Agency delete successfully.' };
         } catch (error) {
             if (error instanceof HttpException) {

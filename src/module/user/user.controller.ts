@@ -61,7 +61,6 @@ export class UserController {
                 userData.agencyCode,
                 userData.roleName,
                 userData.service,
-                userData.serviceOption,
                 userData.permissions,
             );
             return { data: result, status: HttpStatus.CREATED, message: 'User added successfully.' };
@@ -117,10 +116,34 @@ export class UserController {
         }
     }
 
-    @Post('reset-password')
+    @Put('reset-password')
     async resetPassword(@Body() body: { username: string; password: string; verifyCode: string }) {
         try {
             const result = await this.userService.resetPassword(body.username, body.password, body.verifyCode);
+            return { data: result, status: HttpStatus.OK, message: 'User logged in successfully.' };
+        } catch (error) {
+            if (error instanceof HttpException) {
+                throw error;
+            } else {
+                console.log(error);
+                if (error instanceof HttpException) {
+                    throw new HttpException(error.message, error.getStatus());
+                } else {
+                    throw new HttpException('Something went wrong.', HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+        }
+    }
+
+    @Put('change-password')
+    async changePassword(@Body() body: { username: string; email: string; oldPassword: string; newPassword }) {
+        try {
+            const result = await this.userService.changePassword(
+                body.username,
+                body.email,
+                body.oldPassword,
+                body.newPassword,
+            );
             return { data: result, status: HttpStatus.OK, message: 'User logged in successfully.' };
         } catch (error) {
             if (error instanceof HttpException) {
@@ -147,7 +170,6 @@ export class UserController {
                 userData.agencyCode,
                 userData.roleName,
                 userData.service,
-                userData.serviceOption,
                 userData.permissions,
             );
             return { data: result, status: HttpStatus.OK, message: 'User logged in successfully.' };

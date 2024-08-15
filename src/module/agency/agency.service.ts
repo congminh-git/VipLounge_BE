@@ -2,55 +2,38 @@ import { ConflictException, HttpException, HttpStatus, Injectable, NotFoundExcep
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Agency, Service } from './agency.entity';
-import { Lounge } from '../lounge/lounge.entity';
-import { CFRom } from '../cfRom/cfRom.entity';
 
 @Injectable()
 export class AgencyService {
     constructor(
         @InjectRepository(Agency)
         private agencyRepository: Repository<Agency>,
-        @InjectRepository(Lounge)
-        private loungeRepository: Repository<Lounge>,
-        @InjectRepository(CFRom)
-        private cfromRepository: Repository<CFRom>,
     ) {}
 
     async getListAgency(): Promise<Agency[]> {
-        return this.agencyRepository.find({ relations: ['lounges', 'cfroms'] });
+        return this.agencyRepository.find();
     }
 
-    async getAgencyListServiceOptions(agency: string) {
-        if (agency) {
-            const lounge = await this.loungeRepository.find({ where: { agencyCode: agency } });
-            const cfrom = await this.cfromRepository.find({ where: { agencyCode: agency } });
-            return lounge.concat(cfrom);
-        }
-    }
-
-    async getAgencyById(agencyId: number): Promise<Agency> {
-        const agency = await this.agencyRepository.findOne({ where: { id: agencyId } });
+    async getAgencyByKey(agencyKey: string): Promise<Agency> {
+        const agency = await this.agencyRepository.findOne({ where: { key: agencyKey } });
         if (!agency) {
             throw new NotFoundException('Agency not found');
         }
         return agency;
     }
 
-    async addAgency(name: string, code: string, service: Service): Promise<Agency> {
-        const existingAgencyName = await this.agencyRepository.findOne({ where: { name } });
-        if (existingAgencyName) {
-            throw new ConflictException('Agency name already exists');
-        }
+    async addAgency(name: string, code: string, service: Service, airportCode: string): Promise<Agency> {
         const existingAgencyCode = await this.agencyRepository.findOne({ where: { code } });
         if (existingAgencyCode) {
             throw new ConflictException('Agency code already exists');
         }
-        const newAgency = this.agencyRepository.create({ name, code, service });
+        const key = code + airportCode + (service === 'lounge' ? 'LOUNGE' : 'CONNECTING');
+        const newAgency = this.agencyRepository.create({ key, name, code, service, airportCode });
         return this.agencyRepository.save(newAgency);
     }
 
-    async updateAgency(name: string, service: Service, agencyId): Promise<Agency> {
-        const agency = await this.agencyRepository.findOne({ where: { id: agencyId } });
+    async updateAgency(name: string, service: Service, agencyKey): Promise<Agency> {
+        const agency = await this.agencyRepository.findOne({ where: { key: agencyKey } });
         if (!agency) {
             throw new NotFoundException('Agency not found');
         }
@@ -63,8 +46,8 @@ export class AgencyService {
         }
     }
 
-    async putActiveAgency(agencyId: number): Promise<Agency> {
-        const agency = await this.agencyRepository.findOne({ where: { id: agencyId } });
+    async putActiveAgency(agencyKey: string): Promise<Agency> {
+        const agency = await this.agencyRepository.findOne({ where: { key: agencyKey } });
         if (!agency) {
             throw new NotFoundException('Agency not found');
         }
@@ -84,14 +67,14 @@ export class AgencyService {
         }
     }
 
-    async deleteAgency(agencyId: number): Promise<void> {
-        const agency = await this.agencyRepository.findOne({ where: { id: agencyId } });
+    async deleteAgency(agencyKey: string) {
+        const agency = await this.agencyRepository.findOne({ where: { key: agencyKey } });
         if (!agency) {
             throw new NotFoundException('Agency not found');
         }
 
         try {
-            await this.agencyRepository.delete(agencyId);
+            await this.agencyRepository.delete(agencyKey);
         } catch (error) {
             throw new HttpException('Failed to delete agency.', HttpStatus.INTERNAL_SERVER_ERROR);
         }
