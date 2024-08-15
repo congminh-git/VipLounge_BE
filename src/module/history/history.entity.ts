@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 @Entity()
-export class HistoryTable {
+export class History {
     @PrimaryColumn()
     transactionKey: string;
 
@@ -31,7 +31,4 @@ export class HistoryTable {
 
     @Column()
     service: string;
-
-    @Column()
-    serviceOption: string;
 }

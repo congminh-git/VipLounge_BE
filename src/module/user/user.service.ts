@@ -21,7 +21,7 @@ export class UserService {
         @InjectRepository(User)
         private usersRepository: Repository<User>,
         @InjectRepository(Agency)
-        private agencisRepository: Repository<Agency>,
+        private agenciesRepository: Repository<Agency>,
         private readonly mailerService: MailerService,
     ) {}
 
@@ -46,7 +46,6 @@ export class UserService {
         agencyCode: string,
         roleName: string,
         service: string,
-        serviceOption: string,
         permissions: string,
     ): Promise<User> {
         const existingUser = await this.usersRepository.findOne({ where: { username: username } });
@@ -69,7 +68,6 @@ export class UserService {
             agencyCode,
             roleName,
             service,
-            serviceOption,
             permissions,
             passwordExpiryDate: passwordExpiryDate.toISOString(),
         });
@@ -86,12 +84,10 @@ export class UserService {
         service: string;
         agencyCode: string;
         agencyName: string;
-        serviceOption: string;
         permissions: string;
         name: string;
         warning?: string;
     }> {
-        console.log(username);
         const user = await this.usersRepository.findOne({ where: { username }, relations: ['agency'] });
         if (!user) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -111,7 +107,7 @@ export class UserService {
         }
 
         if (user.agency) {
-            const agency = await this.agencisRepository.findOne({ where: { code: user.agencyCode } });
+            const agency = await this.agenciesRepository.findOne({ where: { code: user.agencyCode } });
             if (!agency) {
                 throw new HttpException("User's agency not found", HttpStatus.NOT_FOUND);
             }
@@ -149,11 +145,10 @@ export class UserService {
         const service = user.service;
         const agencyCode = user.agency ? user.agency.code : '';
         const agencyName = user.agency ? user.agency.name : '';
-        const serviceOption = user.serviceOption;
         const permissions = user.permissions;
         const name = user.name;
         const token = jwt.sign({ userId: user.id }, 'your_secret_key', { expiresIn: '24h' });
-        let response = { username, token, email, service, agencyCode, agencyName, serviceOption, permissions, name };
+        let response = { username, token, email, service, agencyCode, agencyName, permissions, name };
 
         if (daysUntilExpiry <= 10) {
             return {
@@ -166,7 +161,7 @@ export class UserService {
     }
 
     async forgotPassword(username: string, email: string) {
-        const user = await this.usersRepository.findOne({ where: { username: username } });
+        const user = await this.usersRepository.findOne({ where: { username: username, email: email } });
         if (!user) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
         }
@@ -191,7 +186,6 @@ export class UserService {
 
     async resetPassword(username: string, password: string, verifyCode: string) {
         const user = await this.usersRepository.findOne({ where: { username: username } });
-        console.log(username);
         if (!user) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
         }
@@ -217,6 +211,30 @@ export class UserService {
         return await this.usersRepository.save(user);
     }
 
+    async changePassword(username: string, email: string, oldPassword: string, newPassword) {
+        const user = await this.usersRepository.findOne({ where: { username: username, email: email } });
+        if (!user) {
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+        }
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?!.*[\s])(?!.*[^\w\d]).{6,15}$/;
+        const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('Old password is wrong');
+        }
+        if (!passwordRegex.test(newPassword)) {
+            throw new ConflictException('Password does not meet the requirements');
+        }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        user.passwordVerificationCode = null;
+        user.verificationCodeExpiry = null;
+        const passwordExpiryDate = new Date();
+        passwordExpiryDate.setDate(passwordExpiryDate.getDate() + 90);
+        user.passwordExpiryDate = passwordExpiryDate.toISOString();
+        user.failLoginCount = 0;
+        return await this.usersRepository.save(user);
+    }
+
     async putUpdateUser(
         userId: number,
         name: string,
@@ -224,7 +242,6 @@ export class UserService {
         agencyCode: string,
         roleName: string,
         service: string,
-        serviceOption: string,
         permissions: string,
     ): Promise<User> {
         const user = await this.usersRepository.findOne({ where: { id: userId } });
@@ -236,7 +253,6 @@ export class UserService {
             user.agencyCode = agencyCode;
             user.roleName = roleName;
             user.service = service;
-            user.serviceOption = serviceOption;
             user.permissions = permissions;
             return await this.usersRepository.save(user);
         }

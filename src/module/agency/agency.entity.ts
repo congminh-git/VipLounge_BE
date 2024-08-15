@@ -1,13 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, JoinColumn } from 'typeorm';
-import { Lounge } from '../lounge/lounge.entity';
-import { CFRom } from '../cfRom/cfRom.entity';
+import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn } from 'typeorm';
 
-export type Service = 'lounge' | 'connecting_flight' | 'master';
+export type Service = 'lounge' | 'connecting_flight';
 
 @Entity()
 export class Agency {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryColumn()
+    key: string;
 
     @Column()
     name: string;
@@ -19,11 +17,8 @@ export class Agency {
     service: Service;
 
     @Column()
+    airportCode: string;
+
+    @Column()
     status: number = 0;
-
-    @OneToMany(() => Lounge, (lounge) => lounge.agency)
-    lounges: Lounge[];
-
-    @OneToMany(() => CFRom, (cfrom) => cfrom.agency)
-    cfroms: CFRom[];
 }
