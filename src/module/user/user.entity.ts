@@ -16,10 +16,10 @@ export class User {
     @Column()
     password: string;
 
-    @Column()
+    @Column({ nullable: true })
     passwordVerificationCode: string;
 
-    @Column()
+    @Column({ nullable: true })
     verificationCodeExpiry: string;
 
     @Column()
@@ -43,10 +43,10 @@ export class User {
     @Column({ type: 'text' })
     permissions: string;
 
-    @Column()
+    @Column({ default: 0 })
     status: number;
 
-    @Column()
+    @Column({ default: 0 })
     failLoginCount: number;
 
     @ManyToOne(() => Agency, (agency) => agency.code, { nullable: true })
