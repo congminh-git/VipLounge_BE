@@ -24,6 +24,7 @@ let AirportService = class AirportService {
             return response.data;
         }
         catch (error) {
+            console.log(error);
             throw new Error(`Failed to get airports: ${error.message}`);
         }
     }

@@ -12,6 +12,7 @@ export class AirportService {
             const response = await lastValueFrom(this.httpService.get(url));
             return response.data;
         } catch (error) {
+            console.log(error);
             throw new Error(`Failed to get airports: ${error.message}`);
         }
     }
